@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controller/login_controller.dart';
+import 'home_view.dart';
+import 'register_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({
@@ -17,23 +19,78 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   final _controller = LoginController();
-  final _userController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   String? _message;
-  bool? _isSuccess;
+  bool _isSuccess = false;
   bool _rememberMe = false;
 
   void _login() {
-    final user = _userController.text;
-    final pass = _passController.text;
-    final success = _controller.login(user, pass);
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      setState(() {
+        _message = null;
+      });
+      return;
+    }
+
+    final email = _emailController.text.trim();
+    final password = _passController.text;
+    final success = _controller.login(email, password);
+
+    if (success) {
+      setState(() {
+        _isSuccess = true;
+        _message = 'Login realizado com sucesso!';
+      });
+
+      Future.delayed(const Duration(milliseconds: 700), () {
+        if (!mounted) return;
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const HomeView()));
+      });
+      return;
+    }
 
     setState(() {
-      _isSuccess = success;
-      _message = success
-          ? 'Login realizado com sucesso!'
-          : 'Usuário ou senha inválidos.';
+      _isSuccess = false;
+      _message =
+          'E-mail ou senha inválidos. Verifique suas credenciais e tente novamente.';
     });
+  }
+
+  void _navigateToRegister() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const RegisterView()));
+  }
+
+  void _showForgotPassword() {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Esqueceu a senha?'),
+          content: const Text(
+            'Para redefinir sua senha, siga as instruções enviadas ao seu e-mail.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Fechar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passController.dispose();
+    super.dispose();
   }
 
   @override
@@ -102,149 +159,170 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TextField(
-                                  controller: _userController,
-                                  style: TextStyle(
-                                    color: widget.isDarkMode
-                                        ? Colors.green.shade100
-                                        : Colors.green.shade900,
-                                  ),
-                                  decoration: InputDecoration(
-                                    labelText: 'Usuário',
-                                    labelStyle: TextStyle(
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextFormField(
+                                    controller: _emailController,
+                                    keyboardType: TextInputType.emailAddress,
+                                    autofillHints: const [AutofillHints.email],
+                                    style: TextStyle(
                                       color: widget.isDarkMode
-                                          ? Colors.green.shade200
-                                          : Colors.green.shade700,
+                                          ? Colors.green.shade100
+                                          : Colors.green.shade900,
                                     ),
-                                    prefixIcon: Icon(
-                                      Icons.person,
-                                      color: widget.isDarkMode
-                                          ? Colors.green.shade200
-                                          : Colors.green.shade700,
-                                    ),
-                                    filled: true,
-                                    fillColor: widget.isDarkMode
-                                        ? Colors.white.withOpacity(0.05)
-                                        : Colors.green.shade50,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextField(
-                                  controller: _passController,
-                                  style: TextStyle(
-                                    color: widget.isDarkMode
-                                        ? Colors.green.shade100
-                                        : Colors.green.shade900,
-                                  ),
-                                  decoration: InputDecoration(
-                                    labelText: 'Senha',
-                                    labelStyle: TextStyle(
-                                      color: widget.isDarkMode
-                                          ? Colors.green.shade200
-                                          : Colors.green.shade700,
-                                    ),
-                                    prefixIcon: Icon(
-                                      Icons.lock,
-                                      color: widget.isDarkMode
-                                          ? Colors.green.shade200
-                                          : Colors.green.shade700,
-                                    ),
-                                    filled: true,
-                                    fillColor: widget.isDarkMode
-                                        ? Colors.white.withOpacity(0.05)
-                                        : Colors.green.shade50,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
-                                  obscureText: true,
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Checkbox(
-                                          value: _rememberMe,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _rememberMe = value ?? false;
-                                            });
-                                          },
-                                          activeColor: Colors.green,
-                                        ),
-                                        Text(
-                                          'Lembrar',
-                                          style: TextStyle(
-                                            color: widget.isDarkMode
-                                                ? Colors.green.shade100
-                                                : Colors.green.shade900,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    TextButton(
-                                      onPressed: () {},
-                                      child: Text(
-                                        'Esqueceu a senha?',
-                                        style: TextStyle(
-                                          color: widget.isDarkMode
-                                              ? Colors.green.shade200
-                                              : Colors.green.shade700,
-                                        ),
+                                    decoration: InputDecoration(
+                                      labelText: 'E-mail',
+                                      labelStyle: TextStyle(
+                                        color: widget.isDarkMode
+                                            ? Colors.green.shade200
+                                            : Colors.green.shade700,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.email,
+                                        color: widget.isDarkMode
+                                            ? Colors.green.shade200
+                                            : Colors.green.shade700,
+                                      ),
+                                      filled: true,
+                                      fillColor: widget.isDarkMode
+                                          ? Colors.white.withOpacity(0.05)
+                                          : Colors.green.shade50,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide.none,
                                       ),
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 24),
-                                if (_message != null) ...[
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: _isSuccess == true
-                                          ? Colors.green.withOpacity(0.14)
-                                          : Colors.red.withOpacity(0.14),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          _isSuccess == true
-                                              ? Icons.check_circle
-                                              : Icons.error,
-                                          color: _isSuccess == true
-                                              ? Colors.green
-                                              : Colors.red,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            _message!,
-                                            style: TextStyle(
-                                              color: _isSuccess == true
-                                                  ? Colors.green
-                                                  : Colors.red,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    validator: (value) {
+                                      if (value == null ||
+                                          value.trim().isEmpty) {
+                                        return 'Informe seu e-mail.';
+                                      }
+                                      if (!_controller.isValidEmail(value)) {
+                                        return 'Informe um e-mail válido.';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                   const SizedBox(height: 16),
+                                  TextFormField(
+                                    controller: _passController,
+                                    obscureText: true,
+                                    style: TextStyle(
+                                      color: widget.isDarkMode
+                                          ? Colors.green.shade100
+                                          : Colors.green.shade900,
+                                    ),
+                                    decoration: InputDecoration(
+                                      labelText: 'Senha',
+                                      labelStyle: TextStyle(
+                                        color: widget.isDarkMode
+                                            ? Colors.green.shade200
+                                            : Colors.green.shade700,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.lock,
+                                        color: widget.isDarkMode
+                                            ? Colors.green.shade200
+                                            : Colors.green.shade700,
+                                      ),
+                                      filled: true,
+                                      fillColor: widget.isDarkMode
+                                          ? Colors.white.withOpacity(0.05)
+                                          : Colors.green.shade50,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Informe sua senha.';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Checkbox(
+                                            value: _rememberMe,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _rememberMe = value ?? false;
+                                              });
+                                            },
+                                            activeColor: Colors.green,
+                                          ),
+                                          Text(
+                                            'Lembrar',
+                                            style: TextStyle(
+                                              color: widget.isDarkMode
+                                                  ? Colors.green.shade100
+                                                  : Colors.green.shade900,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      TextButton(
+                                        onPressed: _showForgotPassword,
+                                        child: Text(
+                                          'Esqueceu a senha?',
+                                          style: TextStyle(
+                                            color: widget.isDarkMode
+                                                ? Colors.green.shade200
+                                                : Colors.green.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 24),
+                                  if (_message != null) ...[
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: _isSuccess
+                                            ? Colors.green.withOpacity(0.14)
+                                            : Colors.red.withOpacity(0.14),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            _isSuccess
+                                                ? Icons.check_circle
+                                                : Icons.error,
+                                            color: _isSuccess
+                                                ? Colors.green
+                                                : Colors.red,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              _message!,
+                                              style: TextStyle(
+                                                color: _isSuccess
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -288,13 +366,21 @@ class _LoginViewState extends State<LoginView> {
                           ),
                         ),
                         child: const Text(
-                          'LOGIN',
+                          'Entrar',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
                           ),
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: _navigateToRegister,
+                      child: const Text(
+                        'Cadastro de Usuário',
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
