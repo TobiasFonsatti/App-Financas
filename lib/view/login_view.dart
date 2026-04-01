@@ -21,6 +21,7 @@ class _LoginViewState extends State<LoginView> {
   final _passController = TextEditingController();
   String? _message;
   bool? _isSuccess;
+  bool _rememberMe = false;
 
   void _login() {
     final user = _userController.text;
@@ -37,140 +38,289 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundGradient = widget.isDarkMode
+        ? const LinearGradient(
+            colors: [Color(0xFF133E28), Color(0xFF0E2F1F)],
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+          )
+        : const LinearGradient(
+            colors: [Color(0xFFE7F7EE), Color(0xFFDAF0E0)],
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+          );
+
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: widget.onToggleTheme,
-            icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            tooltip: widget.isDarkMode ? 'Modo claro' : 'Modo escuro',
-          ),
-        ],
-      ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/logo.png',
-                  height: 340,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.account_balance_wallet,
-                      size: 260,
-                      color: Colors.blue,
-                    );
-                  },
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: BoxDecoration(gradient: backgroundGradient),
+        child: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 25,
+                  vertical: 20,
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: widget.isDarkMode
-                        ? [
-                            BoxShadow(
-                              color: Colors.grey.shade300.withOpacity(0.18),
-                              blurRadius: 10,
-                              spreadRadius: 0.4,
-                            ),
-                          ]
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 16,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                  ),
-                  child: Card(
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Transform.translate(
+                      offset: const Offset(0, -20),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        height: 160,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.account_balance_wallet,
+                            size: 160,
+                            color: Colors.green,
+                          );
+                        },
+                      ),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Login',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _userController,
-                            decoration: const InputDecoration(labelText: 'Usuário'),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _passController,
-                            decoration: const InputDecoration(labelText: 'Senha'),
-                            obscureText: true,
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton(onPressed: _login, child: const Text('Entrar')),
-                              const SizedBox(width: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  // lógica para criar conta
-                                },
-                                child: const Text('Criar conta'),
+                    const SizedBox(height: 24),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: widget.isDarkMode
+                                ? Colors.white.withOpacity(0.08)
+                                : Colors.white.withOpacity(0.95),
+                            borderRadius: BorderRadius.circular(32),
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.isDarkMode
+                                    ? Colors.black.withOpacity(0.35)
+                                    : Colors.black.withOpacity(0.12),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
                               ),
                             ],
                           ),
-                          if (_message != null) ...[
-                            const SizedBox(height: 20),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: _isSuccess == true
-                                    ? Colors.green.shade100
-                                    : Colors.red.shade100,
-                                border: Border.all(
-                                  color: _isSuccess == true ? Colors.green : Colors.red,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _isSuccess == true ? Icons.check_circle : Icons.error,
-                                    color: _isSuccess == true ? Colors.green : Colors.red,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextField(
+                                  controller: _userController,
+                                  style: TextStyle(
+                                    color: widget.isDarkMode
+                                        ? Colors.green.shade100
+                                        : Colors.green.shade900,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      _message!,
-                                      style: TextStyle(
-                                        color: _isSuccess == true
-                                            ? Colors.green.shade900
-                                            : Colors.red.shade900,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  decoration: InputDecoration(
+                                    labelText: 'Usuário',
+                                    labelStyle: TextStyle(
+                                      color: widget.isDarkMode
+                                          ? Colors.green.shade200
+                                          : Colors.green.shade700,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.person,
+                                      color: widget.isDarkMode
+                                          ? Colors.green.shade200
+                                          : Colors.green.shade700,
+                                    ),
+                                    filled: true,
+                                    fillColor: widget.isDarkMode
+                                        ? Colors.white.withOpacity(0.05)
+                                        : Colors.green.shade50,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide.none,
                                     ),
                                   ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextField(
+                                  controller: _passController,
+                                  style: TextStyle(
+                                    color: widget.isDarkMode
+                                        ? Colors.green.shade100
+                                        : Colors.green.shade900,
+                                  ),
+                                  decoration: InputDecoration(
+                                    labelText: 'Senha',
+                                    labelStyle: TextStyle(
+                                      color: widget.isDarkMode
+                                          ? Colors.green.shade200
+                                          : Colors.green.shade700,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.lock,
+                                      color: widget.isDarkMode
+                                          ? Colors.green.shade200
+                                          : Colors.green.shade700,
+                                    ),
+                                    filled: true,
+                                    fillColor: widget.isDarkMode
+                                        ? Colors.white.withOpacity(0.05)
+                                        : Colors.green.shade50,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  obscureText: true,
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Checkbox(
+                                          value: _rememberMe,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _rememberMe = value ?? false;
+                                            });
+                                          },
+                                          activeColor: Colors.green,
+                                        ),
+                                        Text(
+                                          'Lembrar',
+                                          style: TextStyle(
+                                            color: widget.isDarkMode
+                                                ? Colors.green.shade100
+                                                : Colors.green.shade900,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    TextButton(
+                                      onPressed: () {},
+                                      child: Text(
+                                        'Esqueceu a senha?',
+                                        style: TextStyle(
+                                          color: widget.isDarkMode
+                                              ? Colors.green.shade200
+                                              : Colors.green.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                if (_message != null) ...[
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: _isSuccess == true
+                                          ? Colors.green.withOpacity(0.14)
+                                          : Colors.red.withOpacity(0.14),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          _isSuccess == true
+                                              ? Icons.check_circle
+                                              : Icons.error,
+                                          color: _isSuccess == true
+                                              ? Colors.green
+                                              : Colors.red,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _message!,
+                                            style: TextStyle(
+                                              color: _isSuccess == true
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
                                 ],
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
+                        ),
+                        Positioned(
+                          top: -40,
+                          left: 0,
+                          right: 0,
+                          child: CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.green,
+                            child: const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      width: double.infinity,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(0.35),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
                         ],
                       ),
+                      child: TextButton(
+                        onPressed: _login,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                        child: const Text(
+                          'LOGIN',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    onPressed: widget.onToggleTheme,
+                    icon: Icon(
+                      widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                      color: Colors.green,
+                    ),
+                    tooltip: widget.isDarkMode ? 'Modo claro' : 'Modo escuro',
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
