@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'home_view.dart';
 
 class RegisterView extends StatefulWidget {
-  const RegisterView({super.key});
+  const RegisterView({
+    super.key,
+    required this.onToggleTheme,
+    required this.isDarkMode,
+  });
+
+  final VoidCallback onToggleTheme;
+  final bool isDarkMode;
 
   @override
   State<RegisterView> createState() => _RegisterViewState();
@@ -16,6 +23,9 @@ class _RegisterViewState extends State<RegisterView> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _acceptedTerms = false;
+  bool _submitted = false;
+  String? _formMessage;
+  bool _isSuccess = false;
 
   static final RegExp _emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}");
 
@@ -37,31 +47,75 @@ class _RegisterViewState extends State<RegisterView> {
     return null;
   }
 
+  TextStyle _buildInputTextStyle(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    return TextStyle(
+      color: brightness == Brightness.dark ? Colors.white : Colors.black87,
+    );
+  }
+
+  InputDecoration _buildInputDecoration({required String label, required IconData icon}) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      border: const OutlineInputBorder(),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.green.shade700, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
+      focusedErrorBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.red, width: 2),
+      ),
+      errorStyle: const TextStyle(
+        color: Colors.black87,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   void _submit() {
     final form = _formKey.currentState;
     if (form == null) return;
 
+    setState(() {
+      _submitted = true;
+    });
+
     if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Você deve aceitar os termos de uso para continuar.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        _isSuccess = false;
+        _formMessage = 'Você deve aceitar os termos de uso para continuar.';
+      });
       return;
     }
 
-    if (form.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cadastro realizado com sucesso! Bem-vindo ao aplicativo.'),
-          backgroundColor: Colors.green,
+    if (!form.validate()) {
+      setState(() {
+        _isSuccess = false;
+        _formMessage = 'Corrija os campos destacados em vermelho para prosseguir.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSuccess = true;
+      _formMessage = 'Cadastro realizado com sucesso! Bem-vindo ao aplicativo.';
+    });
+
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => HomeView(
+            isDarkMode: widget.isDarkMode,
+            onToggleTheme: widget.onToggleTheme,
+          ),
         ),
       );
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeView()),
-      );
-    }
+    });
   }
 
   @override
@@ -90,6 +144,7 @@ class _RegisterViewState extends State<RegisterView> {
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
+            autovalidateMode: _submitted ? AutovalidateMode.always : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -99,10 +154,10 @@ class _RegisterViewState extends State<RegisterView> {
                 TextFormField(
                   controller: _nameController,
                   keyboardType: TextInputType.name,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome do usuário',
-                    prefixIcon: Icon(Icons.person),
-                    border: OutlineInputBorder(),
+                  style: _buildInputTextStyle(context),
+                  decoration: _buildInputDecoration(
+                    label: 'Nome do usuário',
+                    icon: Icons.person,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -118,10 +173,10 @@ class _RegisterViewState extends State<RegisterView> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'E-mail',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
+                  style: _buildInputTextStyle(context),
+                  decoration: _buildInputDecoration(
+                    label: 'E-mail',
+                    icon: Icons.email,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -137,10 +192,10 @@ class _RegisterViewState extends State<RegisterView> {
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Número de telefone (DDD)',
-                    prefixIcon: Icon(Icons.phone),
-                    border: OutlineInputBorder(),
+                  style: _buildInputTextStyle(context),
+                  decoration: _buildInputDecoration(
+                    label: 'Número de telefone (DDD)',
+                    icon: Icons.phone,
                   ),
                   validator: (value) {
                     final error = _validatePhone(value);
@@ -154,10 +209,10 @@ class _RegisterViewState extends State<RegisterView> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Senha',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
+                  style: _buildInputTextStyle(context),
+                  decoration: _buildInputDecoration(
+                    label: 'Senha',
+                    icon: Icons.lock,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -173,10 +228,10 @@ class _RegisterViewState extends State<RegisterView> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirmação de senha',
-                    prefixIcon: Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(),
+                  style: _buildInputTextStyle(context),
+                  decoration: _buildInputDecoration(
+                    label: 'Confirmação de senha',
+                    icon: Icons.lock_outline,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -215,13 +270,36 @@ class _RegisterViewState extends State<RegisterView> {
                     ),
                   ],
                 ),
+                if (_formMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: _isSuccess
+                          ? Colors.green.withOpacity(0.15)
+                          : Colors.red.withOpacity(0.15),
+                      border: Border.all(
+                        color: _isSuccess ? Colors.green : Colors.red,
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _formMessage!,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _submit,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),
-                  child: const Text('Cadastrar'),
+                  child: const Text('Criar conta'),
                 ),
               ],
             ),

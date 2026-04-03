@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../controller/login_controller.dart';
 import 'home_view.dart';
 import 'register_view.dart';
+import 'forgot_password_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({
@@ -48,7 +49,10 @@ class _LoginViewState extends State<LoginView> {
         if (!mounted) return;
         Navigator.of(
           context,
-        ).push(MaterialPageRoute(builder: (_) => const HomeView()));
+        ).push(MaterialPageRoute(builder: (_) => HomeView(
+              isDarkMode: widget.isDarkMode,
+              onToggleTheme: widget.onToggleTheme,
+            )));
       });
       return;
     }
@@ -63,26 +67,22 @@ class _LoginViewState extends State<LoginView> {
   void _navigateToRegister() {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const RegisterView()));
+    ).push(MaterialPageRoute(
+      builder: (_) => RegisterView(
+        isDarkMode: widget.isDarkMode,
+        onToggleTheme: widget.onToggleTheme,
+      ),
+    ));
   }
 
-  void _showForgotPassword() {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Esqueceu a senha?'),
-          content: const Text(
-            'Para redefinir sua senha, siga as instruções enviadas ao seu e-mail.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fechar'),
-            ),
-          ],
-        );
-      },
+  void _navigateToForgotPassword() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordView(
+          onToggleTheme: widget.onToggleTheme,
+          isDarkMode: widget.isDarkMode,
+        ),
+      ),
     );
   }
 
@@ -271,7 +271,7 @@ class _LoginViewState extends State<LoginView> {
                                         ],
                                       ),
                                       TextButton(
-                                        onPressed: _showForgotPassword,
+                                        onPressed: _navigateToForgotPassword,
                                         child: Text(
                                           'Esqueceu a senha?',
                                           style: TextStyle(
@@ -376,11 +376,29 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: _navigateToRegister,
-                      child: const Text(
-                        'Cadastro de Usuário',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                    Container(
+                      width: double.infinity,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.green, width: 1.8),
+                      ),
+                      child: TextButton(
+                        onPressed: _navigateToRegister,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                        child: const Text(
+                          'Criar conta',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],
