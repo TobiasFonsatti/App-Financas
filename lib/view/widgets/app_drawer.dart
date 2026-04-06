@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../about_view.dart';
 import '../transactions_view.dart';
+import '../radar_financeiro_view.dart';
 
 class AppDrawer extends StatelessWidget {
   final String currentRoute;
@@ -52,6 +53,24 @@ class AppDrawer extends StatelessWidget {
               } else {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (_) => const TransactionsView()),
+                );
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.candlestick_chart_outlined),
+            title: const Text('Radar Financeiro'),
+            onTap: () {
+              Navigator.of(context).pop();
+              if (currentRoute == 'Radar Financeiro') return;
+
+              if (currentRoute == 'Dashboard') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const RadarFinanceiroView()),
+                );
+              } else {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const RadarFinanceiroView()),
                 );
               }
             },
