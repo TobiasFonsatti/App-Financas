@@ -10,19 +10,22 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Drawer(
+      backgroundColor: isDark ? const Color(0xFF133E28) : null,
       child: Column(
         children: [
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
+              color: isDark ? const Color(0xFF133E28) : Colors.green.shade600,
             ),
             child: Align(
               alignment: Alignment.bottomLeft,
               child: Text(
                 'Menu',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
+                  color: isDark ? const Color(0xFF86EFAC) : Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -30,8 +33,8 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
+            leading: Icon(Icons.dashboard, color: isDark ? const Color(0xFF86EFAC) : null),
+            title: Text('Dashboard', style: TextStyle(color: isDark ? const Color(0xFF86EFAC) : null)),
             onTap: () {
               Navigator.of(context).pop(); // Close drawer
               if (currentRoute != 'Dashboard') {
@@ -40,8 +43,8 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.list_alt),
-            title: const Text('Transações'),
+            leading: Icon(Icons.list_alt, color: isDark ? const Color(0xFF86EFAC) : null),
+            title: Text('Transações', style: TextStyle(color: isDark ? const Color(0xFF86EFAC) : null)),
             onTap: () {
               Navigator.of(context).pop();
               if (currentRoute == 'Transações') return;
@@ -58,8 +61,8 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.candlestick_chart_outlined),
-            title: const Text('Radar Financeiro'),
+            leading: Icon(Icons.candlestick_chart_outlined, color: isDark ? const Color(0xFF86EFAC) : null),
+            title: Text('Radar Financeiro', style: TextStyle(color: isDark ? const Color(0xFF86EFAC) : null)),
             onTap: () {
               Navigator.of(context).pop();
               if (currentRoute == 'Radar Financeiro') return;
@@ -75,11 +78,11 @@ class AppDrawer extends StatelessWidget {
               }
             },
           ),
-          const Divider(),
+          Divider(color: isDark ? const Color(0xFF86EFAC).withValues(alpha: 0.25) : null),
           const Spacer(),
           ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('Sobre'),
+            leading: Icon(Icons.info_outline, color: isDark ? const Color(0xFF86EFAC) : null),
+            title: Text('Sobre', style: TextStyle(color: isDark ? const Color(0xFF86EFAC) : null)),
             onTap: () {
               Navigator.of(context).pop();
               if (currentRoute == 'Sobre') return;
@@ -96,8 +99,8 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            leading: Icon(Icons.logout, color: isDark ? const Color(0xFF86EFAC) : null),
+            title: Text('Logout', style: TextStyle(color: isDark ? const Color(0xFF86EFAC) : null)),
             onTap: () {
               Navigator.of(context).pop();
               Future.delayed(const Duration(milliseconds: 100), () {

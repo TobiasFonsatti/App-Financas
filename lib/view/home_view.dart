@@ -278,9 +278,23 @@ class _HomeViewState extends State<HomeView> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Ver todas', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.primary)),
+                      Text(
+                        'Ver todas',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: widget.isDarkMode
+                              ? const Color(0xFF86EFAC)
+                              : Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
                       const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward, size: 16, color: Theme.of(context).colorScheme.primary),
+                      Icon(
+                        Icons.arrow_forward,
+                        size: 16,
+                        color: widget.isDarkMode
+                            ? const Color(0xFF86EFAC)
+                            : Theme.of(context).colorScheme.primary,
+                      ),
                     ],
                   ),
                 ),
@@ -331,6 +345,8 @@ class _HomeViewState extends State<HomeView> {
             MaterialPageRoute(builder: (_) => const AddTransactionView()),
           );
         },
+        backgroundColor: widget.isDarkMode ? const Color(0xFF86EFAC) : null,
+        foregroundColor: widget.isDarkMode ? const Color(0xFF133E28) : null,
         child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
