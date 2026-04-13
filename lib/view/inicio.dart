@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'add_transaction_view.dart';
-import 'metas_view.dart';
-import 'monthly_summary_view.dart';
-import 'transacaoes_view.dart';
+import 'adicionar_transacao.dart';
+import 'metas.dart';
+import 'resumo_mensal.dart';
+import 'transacoes.dart';
 import 'widgets/app_drawer.dart';
 
 class HomeView extends StatefulWidget {

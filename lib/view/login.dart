@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../controller/login_controller.dart';
-import 'home_view.dart';
-import 'register_view.dart';
-import 'forgot_password_view.dart';
+import 'inicio.dart';
+import 'cadastro.dart';
+import 'esqueceu_senha.dart';
 import 'widgets/message_helpers.dart';
 
 class LoginView extends StatefulWidget {

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import '../about_view.dart';
-import '../metas_view.dart';
-import '../monthly_summary_view.dart';
-import '../transacaoes_view.dart';
-import '../radar_financeiro_view.dart';
+﻿import 'package:flutter/material.dart';
+import '../sobre.dart';
+import '../metas.dart';
+import '../resumo_mensal.dart';
+import '../transacoes.dart';
+import '../radar_financeiro.dart';
 
 class AppDrawer extends StatelessWidget {
   final String currentRoute;

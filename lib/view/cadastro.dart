@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'home_view.dart';
+﻿import 'package:flutter/material.dart';
+import 'inicio.dart';
 import 'widgets/message_helpers.dart';
 
 class RegisterView extends StatefulWidget {
