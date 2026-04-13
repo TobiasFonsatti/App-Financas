@@ -3,9 +3,7 @@ import 'widgets/app_drawer.dart';
 import '../service/brapi_service.dart';
 import '../model/brapi_models.dart';
 
-// ──────────────────────────────────────────────
-// Main View
-// ──────────────────────────────────────────────
+
 class RadarFinanceiroView extends StatefulWidget {
   const RadarFinanceiroView({super.key});
 
@@ -181,10 +179,6 @@ class _RadarFinanceiroViewState extends State<RadarFinanceiroView>
       ),
     );
   }
-
-  // ─────────────────────────────────
-  // SECTION HEADER
-  // ─────────────────────────────────
   Widget _buildSectionHeader(
     bool isDark, {
     required IconData icon,
@@ -234,10 +228,6 @@ class _RadarFinanceiroViewState extends State<RadarFinanceiroView>
       ],
     );
   }
-
-  // ─────────────────────────────────
-  // LAST UPDATED CHIP
-  // ─────────────────────────────────
   Widget _buildLastUpdatedChip(bool isDark) {
     if (_marketData == null) return const SizedBox.shrink();
     final h = _marketData!.timestamp.hour.toString().padLeft(2, '0');
@@ -283,10 +273,6 @@ class _RadarFinanceiroViewState extends State<RadarFinanceiroView>
       ],
     );
   }
-
-  // ─────────────────────────────────
-  // CURRENCY CARDS
-  // ─────────────────────────────────
   Widget _buildCurrencySection(bool isDark) {
     if (_marketData == null) return const SizedBox.shrink();
     return Column(
@@ -295,10 +281,6 @@ class _RadarFinanceiroViewState extends State<RadarFinanceiroView>
           .toList(),
     );
   }
-
-  // ─────────────────────────────────
-  // INDICATORS ROW
-  // ─────────────────────────────────
   Widget _buildIndicatorsGrid(bool isDark) {
     if (_marketData == null) return const SizedBox.shrink();
 
@@ -334,10 +316,6 @@ class _RadarFinanceiroViewState extends State<RadarFinanceiroView>
       ),
     );
   }
-
-  // ─────────────────────────────────
-  // STOCKS LIST
-  // ─────────────────────────────────
   Widget _buildStocksList(bool isDark) {
     if (_marketData == null) return const SizedBox.shrink();
     return Container(
@@ -369,10 +347,6 @@ class _RadarFinanceiroViewState extends State<RadarFinanceiroView>
       ),
     );
   }
-
-  // ─────────────────────────────────
-  // DISCLAIMER
-  // ─────────────────────────────────
   Widget _buildDisclaimer(bool isDark) {
     return Center(
       child: Text(
@@ -388,10 +362,6 @@ class _RadarFinanceiroViewState extends State<RadarFinanceiroView>
     );
   }
 }
-
-// ══════════════════════════════════════════════
-// CURRENCY CARD WIDGET
-// ══════════════════════════════════════════════
 class _CurrencyCard extends StatelessWidget {
   final BrapiCurrency currency;
   final bool isDark;
@@ -512,10 +482,6 @@ class _CurrencyCard extends StatelessWidget {
     );
   }
 }
-
-// ══════════════════════════════════════════════
-// INDICATOR CARD WIDGET
-// ══════════════════════════════════════════════
 class _IndicatorCard extends StatelessWidget {
   final String name;
   final String description;
@@ -619,10 +585,6 @@ class _IndicatorCard extends StatelessWidget {
     );
   }
 }
-
-// ══════════════════════════════════════════════
-// STOCK ROW WIDGET
-// ══════════════════════════════════════════════
 class _StockRow extends StatelessWidget {
   final BrapiQuote stock;
   final bool isDark;
