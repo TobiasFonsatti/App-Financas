@@ -1,9 +1,13 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../sobre.dart';
 import '../metas.dart';
 import '../resumo_mensal.dart';
 import '../transacoes.dart';
 import '../radar_financeiro.dart';
+import '../pesquisa.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../login.dart';
+import '../../main.dart';
 
 class AppDrawer extends StatelessWidget {
   final String currentRoute;
@@ -70,6 +74,30 @@ class AppDrawer extends StatelessWidget {
               } else {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (_) => const TransactionsView()),
+                );
+              }
+            },
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.search,
+              color: isDark ? const Color(0xFF86EFAC) : null,
+            ),
+            title: Text(
+              'Pesquisar',
+              style: TextStyle(color: isDark ? const Color(0xFF86EFAC) : null),
+            ),
+            onTap: () {
+              Navigator.of(context).pop();
+              if (currentRoute == 'Pesquisa') return;
+
+              if (currentRoute == 'Dashboard') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SearchView()),
+                );
+              } else {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const SearchView()),
                 );
               }
             },
@@ -189,15 +217,23 @@ class AppDrawer extends StatelessWidget {
               'Logout',
               style: TextStyle(color: isDark ? const Color(0xFF86EFAC) : null),
             ),
-            onTap: () {
-              Navigator.of(context).pop();
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (!context.mounted) return;
-                if (currentRoute != 'Dashboard') {
-                  Navigator.of(context).pop(); // go back to home first
-                }
-                Navigator.of(context).pop(); // go back to login
-              });
+            onTap: () async {
+              final navigator = Navigator.of(context);
+              final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
+              await FirebaseAuth.instance.signOut(); // logout no Firebase!
+
+              if (navigator.context.mounted) {
+                navigator.pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => LoginView(
+                      isDarkMode: isDarkTheme,
+                      onToggleTheme: () => MyApp.toggleTheme(context),
+                    ),
+                  ),
+                  (route) => false, // limpa toda a pilha de navegação!
+                );
+              }
             },
           ),
         ],

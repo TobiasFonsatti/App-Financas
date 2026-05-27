@@ -55,7 +55,7 @@ class AboutView extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Versão: 1.0',
+                'Versão: 2.0',
                 style: TextStyle(fontSize: 16, color: isDark ? const Color(0xFF86EFAC) : null),
               ),
               const SizedBox(height: 18),

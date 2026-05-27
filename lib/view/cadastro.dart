@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../controller/register_controller.dart';
 import 'inicio.dart';
 import 'widgets/message_helpers.dart';
 
@@ -17,6 +18,7 @@ class RegisterView extends StatefulWidget {
 }
 
 class _RegisterViewState extends State<RegisterView> {
+  final _controller = RegisterController();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -27,8 +29,9 @@ class _RegisterViewState extends State<RegisterView> {
   bool _submitted = false;
   String? _formMessage;
   bool _isSuccess = false;
-
-  static final RegExp _emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}");
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   String? _validatePhone(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -58,10 +61,12 @@ class _RegisterViewState extends State<RegisterView> {
   InputDecoration _buildInputDecoration({
     required String label,
     required IconData icon,
+    Widget? suffixIcon,
   }) {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
+      suffixIcon: suffixIcon,
       border: const OutlineInputBorder(),
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.green.shade700, width: 2),
@@ -80,7 +85,7 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final form = _formKey.currentState;
     if (form == null) return;
 
@@ -109,32 +114,70 @@ class _RegisterViewState extends State<RegisterView> {
       });
       showAppSnackBar(
         context,
-        'Corrija os campos destacados em vermelho para prosseguir.',
+        'Corrija os campos destacados em vermelho para prossegui.',
         isError: true,
       );
       return;
     }
 
     setState(() {
-      _isSuccess = true;
-      _formMessage = 'Cadastro realizado com sucesso! Bem-vindo ao aplicativo.';
+      _isLoading = true;
+      _formMessage = null;
     });
-    showAppSnackBar(
-      context,
-      'Cadastro realizado com sucesso! Bem-vindo ao aplicativo.',
+
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+
+    final errorMessage = await _controller.register(
+      name: name,
+      email: email,
+      phone: phone,
+      password: password,
     );
 
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => HomeView(
-            isDarkMode: widget.isDarkMode,
-            onToggleTheme: widget.onToggleTheme,
-          ),
-        ),
-      );
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        if (errorMessage == null) {
+          _isSuccess = true;
+          _formMessage = 'Cadastro realizado com sucesso! Bem-vindo ao aplicativo.';
+        } else {
+          _isSuccess = false;
+          _formMessage = errorMessage;
+        }
+      });
+    }
+
+    if (errorMessage == null) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          'Cadastro realizado com sucesso! Bem-vindo ao aplicativo.',
+        );
+
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => HomeView(
+                isDarkMode: widget.isDarkMode,
+                onToggleTheme: widget.onToggleTheme,
+              ),
+            ),
+          );
+        });
+      }
+    } else {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          errorMessage,
+          isError: true,
+        );
+      }
+    }
   }
 
   @override
@@ -203,7 +246,7 @@ class _RegisterViewState extends State<RegisterView> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Informe o e-mail.';
                     }
-                    if (!_emailRegex.hasMatch(value.trim())) {
+                    if (!_controller.isValidEmail(value)) {
                       return 'Informe um e-mail válido.';
                     }
                     return null;
@@ -229,18 +272,30 @@ class _RegisterViewState extends State<RegisterView> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   style: _buildInputTextStyle(context),
                   decoration: _buildInputDecoration(
                     label: 'Senha',
                     icon: Icons.lock,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Informe a senha.';
                     }
-                    if (value.length < 6) {
-                      return 'A senha deve ter ao menos 6 caracteres.';
+                    if (!_controller.validatePasswordComplexity(value)) {
+                      return 'A senha deve conter ao menos 6 caracteres, uma letra maiúscula, uma letra minúscula e um caractere especial.';
                     }
                     return null;
                   },
@@ -248,11 +303,23 @@ class _RegisterViewState extends State<RegisterView> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _confirmPasswordController,
-                  obscureText: true,
+                  obscureText: _obscureConfirmPassword,
                   style: _buildInputTextStyle(context),
                   decoration: _buildInputDecoration(
                     label: 'Confirmação de senha',
                     icon: Icons.lock_outline,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      },
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -320,11 +387,20 @@ class _RegisterViewState extends State<RegisterView> {
                   ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),
-                  child: const Text('Criar conta'),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : const Text('Criar conta'),
                 ),
               ],
             ),

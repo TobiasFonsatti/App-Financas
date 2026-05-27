@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "448213898855",
+    "project_id": "fiducia-dc7e5",
+    "storage_bucket": "fiducia-dc7e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:448213898855:android:f5a0cc641016a89688a6c2",
+        "android_client_info": {
+          "package_name": "com.example.app_financas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4WPEm6QfBY0cPvMkxZbEPeUvcck1v4vQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

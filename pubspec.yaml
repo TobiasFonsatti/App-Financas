@@ -1,7 +1,7 @@
 name: app_financas
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0+1
+version: 2.0.0+1
 
 environment:
   sdk: ^3.11.0
@@ -13,6 +13,9 @@ dependencies:
   flutter_dotenv: ^5.1.0
   flutter:
     sdk: flutter
+  firebase_core: ^4.9.0
+  cloud_firestore: ^6.4.1
+  firebase_auth: ^6.5.1
 
 dev_dependencies:
   flutter_test:

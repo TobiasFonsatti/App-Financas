@@ -52,7 +52,7 @@ Future<bool?> showConfirmationDialog(
           content,
           style: TextStyle(
             color: isDark
-                ? const Color(0xFF86EFAC).withOpacity(0.8)
+                ? const Color(0xFF86EFAC).withValues(alpha: 0.8)
                 : Colors.black54,
           ),
         ),
@@ -107,7 +107,7 @@ Future<void> showInformationDialog(
           content,
           style: TextStyle(
             color: isDark
-                ? const Color(0xFF86EFAC).withOpacity(0.8)
+                ? const Color(0xFF86EFAC).withValues(alpha: 0.8)
                 : Colors.black54,
           ),
         ),
@@ -151,7 +151,7 @@ Future<void> showErrorDialog(
           content,
           style: TextStyle(
             color: isDark
-                ? const Color(0xFF86EFAC).withOpacity(0.8)
+                ? const Color(0xFF86EFAC).withValues(alpha: 0.8)
                 : Colors.black54,
           ),
         ),

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../model/transacao.dart';
+import '../model/observacao.dart';
 import 'widgets/message_helpers.dart';
 
 class CurrencyInputFormatter extends TextInputFormatter {
@@ -55,6 +59,7 @@ class _AddTransactionViewState extends State<AddTransactionView> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
+  final _noteController = TextEditingController();
   final _amountFocusNode = FocusNode();
   String _transactionType = 'expense';
 
@@ -78,14 +83,65 @@ class _AddTransactionViewState extends State<AddTransactionView> {
   void dispose() {
     _descriptionController.dispose();
     _amountController.dispose();
+    _noteController.dispose();
     _amountFocusNode.dispose();
     super.dispose();
   }
 
-  void _saveTransaction() {
+  Future<void> _saveTransaction() async {
     if (_formKey.currentState?.validate() ?? false) {
-      showAppSnackBar(context, 'Transação adicionada com sucesso!');
-      Navigator.of(context).pop();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        showAppSnackBar(context, 'Usuário não autenticado.', isError: true);
+        return;
+      }
+
+      final raw = _amountController.text.replaceAll('.', '').replaceAll(',', '.');
+      double amountVal = double.tryParse(raw) ?? 0.0;
+      if (_transactionType == 'expense') {
+        amountVal = -amountVal;
+      }
+
+      try {
+        final docRef = FirebaseFirestore.instance.collection('transacoes').doc();
+        final transaction = Transacao(
+          id: docRef.id,
+          uid: user.uid,
+          description: _descriptionController.text.trim(),
+          amount: amountVal,
+          date: DateTime.now().toIso8601String().substring(0, 10),
+          type: _transactionType,
+          createdAt: DateTime.now(),
+        );
+
+        await docRef.set(transaction.toJson());
+
+        final noteText = _noteController.text.trim();
+        if (noteText.isNotEmpty) {
+          final noteRef = FirebaseFirestore.instance.collection('observacoes').doc();
+          final note = Observacao(
+            id: noteRef.id,
+            uid: user.uid,
+            relatedId: docRef.id,
+            text: noteText,
+            createdAt: DateTime.now(),
+          );
+          await noteRef.set(note.toJson());
+        }
+
+        if (mounted) {
+          showAppSnackBar(context, 'Transação adicionada com sucesso!');
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          showAppSnackBar(
+            context,
+            'Erro ao salvar transação: $e',
+            isError: true,
+          );
+        }
+      }
       return;
     }
 
@@ -182,6 +238,16 @@ class _AddTransactionViewState extends State<AddTransactionView> {
                       },
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _noteController,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Anotações (Opcional)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.note_alt_outlined),
+                  ),
                 ),
                 const Spacer(),
                 ElevatedButton(

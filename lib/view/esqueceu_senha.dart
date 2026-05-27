@@ -22,6 +22,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   final _formKey = GlobalKey<FormState>();
   String? _message;
   bool _isSuccess = false;
+  bool _isLoading = false;
 
   Future<void> _requestReset() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -36,34 +37,47 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
       return;
     }
 
-    final email = _emailController.text.trim();
-    final success = _controller.requestPasswordReset(email);
+    setState(() {
+      _isLoading = true;
+      _message = null;
+    });
 
-    if (success) {
+    final email = _emailController.text.trim();
+    final errorMessage = await _controller.requestPasswordReset(email);
+
+    if (mounted) {
       setState(() {
-        _isSuccess = true;
-        _message =
-            'Instruções para redefinir a senha foram enviadas para o seu e-mail.';
+        _isLoading = false;
+        if (errorMessage == null) {
+          _isSuccess = true;
+          _message = 'Instruções para redefinir a senha foram enviadas para o seu e-mail.';
+        } else {
+          _isSuccess = false;
+          _message = errorMessage;
+        }
       });
-      await showInformationDialog(
-        context,
-        title: 'Recuperação de senha',
-        content:
-            'Instruções para redefinir a senha foram enviadas para o seu e-mail.',
-      );
+    }
+
+    if (errorMessage == null) {
       if (mounted) {
-        Navigator.of(context).pop();
+        await showInformationDialog(
+          context,
+          title: 'Recuperação de senha',
+          content:
+              'Instruções para redefinir a senha foram enviadas para o seu e-mail.',
+        );
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       }
     } else {
-      setState(() {
-        _isSuccess = false;
-        _message = 'Erro ao solicitar recuperação de senha. Tente novamente.';
-      });
-      showAppSnackBar(
-        context,
-        'Erro ao solicitar recuperação de senha. Tente novamente.',
-        isError: true,
-      );
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          errorMessage,
+          isError: true,
+        );
+      }
     }
   }
 
@@ -218,7 +232,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                             width: double.infinity,
                             height: 58,
                             child: ElevatedButton(
-                              onPressed: _requestReset,
+                              onPressed: _isLoading ? null : _requestReset,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
@@ -226,10 +240,19 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                              child: const Text(
-                                'Solicitar recuperação',
-                                style: TextStyle(fontSize: 18),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Solicitar recuperação',
+                                      style: TextStyle(fontSize: 18),
+                                    ),
                             ),
                           ),
                         ],

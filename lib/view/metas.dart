@@ -1,35 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../model/financial_goal.dart';
 import 'widgets/app_drawer.dart';
+import 'widgets/observacoes_bottom_sheet.dart';
 
-// ─── Model ────────────────────────────────────────────────────────────────────
-class FinancialGoal {
-  String id;
-  String name;
-  String emoji;
-  double targetAmount;
-  double currentAmount;
-  int monthsLeft;
-  bool paused;
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String newText = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
 
-  FinancialGoal({
-    required this.id,
-    required this.name,
-    required this.emoji,
-    required this.targetAmount,
-    required this.currentAmount,
-    required this.monthsLeft,
-    this.paused = false,
-  });
+    if (newText.isEmpty) {
+      return newValue.copyWith(
+        text: '',
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    }
 
-  double get progress =>
-      targetAmount == 0 ? 0 : (currentAmount / targetAmount).clamp(0.0, 1.0);
+    double value = double.parse(newText) / 100;
+    String formattedValue = value.toStringAsFixed(2).replaceAll('.', ',');
 
-  double get remaining =>
-      (targetAmount - currentAmount).clamp(0, double.infinity);
+    List<String> parts = formattedValue.split(',');
+    String intPart = parts[0];
+    String decPart = parts[1];
 
-  double get monthlyNeeded =>
-      monthsLeft <= 0 ? remaining : remaining / monthsLeft;
+    String finalIntPart = "";
+    int count = 0;
+    for (int i = intPart.length - 1; i >= 0; i--) {
+      if (count == 3) {
+        finalIntPart = ".$finalIntPart";
+        count = 0;
+      }
+      finalIntPart = intPart[i] + finalIntPart;
+      count++;
+    }
+
+    String newString = '$finalIntPart,$decPart';
+
+    return newValue.copyWith(
+      text: newString,
+      selection: TextSelection.collapsed(offset: newString.length),
+    );
+  }
 }
 
 // ─── View ─────────────────────────────────────────────────────────────────────
@@ -41,32 +57,6 @@ class MetasView extends StatefulWidget {
 }
 
 class _MetasViewState extends State<MetasView> {
-  final List<FinancialGoal> _goals = [
-    FinancialGoal(
-      id: '1',
-      name: 'Viagem Europa',
-      emoji: '✈️',
-      targetAmount: 15000,
-      currentAmount: 6200,
-      monthsLeft: 11,
-    ),
-    FinancialGoal(
-      id: '2',
-      name: 'Carro novo',
-      emoji: '🚗',
-      targetAmount: 45000,
-      currentAmount: 3500,
-      monthsLeft: 32,
-    ),
-    FinancialGoal(
-      id: '3',
-      name: 'Reserva de emergência',
-      emoji: '🛡️',
-      targetAmount: 10000,
-      currentAmount: 7800,
-      monthsLeft: 2,
-    ),
-  ];
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   String _formatCurrency(double value) {
@@ -77,6 +67,21 @@ class _MetasViewState extends State<MetasView> {
     if (ratio >= 0.5) return const Color(0xFF4ADE80);
     if (ratio >= 0.2) return const Color(0xFFFBBF24);
     return Colors.red.shade400;
+  }
+
+  Future<void> _togglePause(FinancialGoal goal) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('metas')
+          .doc(goal.id)
+          .update({'paused': !goal.paused});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao alterar status: $e')),
+        );
+      }
+    }
   }
 
   // ── Add value dialog ─────────────────────────────────────────────────────
@@ -112,10 +117,10 @@ class _MetasViewState extends State<MetasView> {
                 TextField(
                   controller: ctrl,
                   autofocus: true,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                    FilteringTextInputFormatter.digitsOnly,
+                    CurrencyInputFormatter(),
                   ],
                   decoration: InputDecoration(
                     labelText: 'Valor (R\$)',
@@ -135,18 +140,28 @@ class _MetasViewState extends State<MetasView> {
                       backgroundColor: const Color(0xFF4ADE80),
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       final raw = ctrl.text
-                          .replaceAll(',', '.')
-                          .replaceAll(RegExp(r'[^\d.]'), '');
+                          .replaceAll('.', '')
+                          .replaceAll(',', '.');
                       final val = double.tryParse(raw) ?? 0;
                       if (val <= 0) return;
-                      setState(() {
-                        goal.currentAmount =
-                            (goal.currentAmount + val)
-                                .clamp(0, goal.targetAmount);
-                      });
-                      Navigator.pop(ctx);
+
+                      final newAmount = (goal.currentAmount + val).clamp(0.0, goal.targetAmount);
+
+                      try {
+                        await FirebaseFirestore.instance
+                            .collection('metas')
+                            .doc(goal.id)
+                            .update({'currentAmount': newAmount});
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(content: Text('Erro ao salvar: $e')),
+                          );
+                        }
+                      }
                     },
                     child: const Text('Confirmar'),
                   ),
@@ -165,7 +180,7 @@ class _MetasViewState extends State<MetasView> {
     final nameCtrl = TextEditingController(text: goal?.name ?? '');
     final emojiCtrl = TextEditingController(text: goal?.emoji ?? '🎯');
     final targetCtrl = TextEditingController(
-      text: isNew ? '' : goal.targetAmount.toStringAsFixed(0),
+      text: isNew ? '' : goal.targetAmount.toStringAsFixed(2).replaceAll('.', ','),
     );
     final monthsCtrl = TextEditingController(
       text: isNew ? '' : goal.monthsLeft.toString(),
@@ -229,10 +244,10 @@ class _MetasViewState extends State<MetasView> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: targetCtrl,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: TextInputType.number,
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                      FilteringTextInputFormatter.digitsOnly,
+                      CurrencyInputFormatter(),
                     ],
                     decoration: InputDecoration(
                       labelText: 'Valor objetivo (R\$)',
@@ -261,49 +276,67 @@ class _MetasViewState extends State<MetasView> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       final name = nameCtrl.text.trim();
                       final target = double.tryParse(
                             targetCtrl.text
-                                .replaceAll(',', '.')
-                                .replaceAll(RegExp(r'[^\d.]'), ''),
+                                .replaceAll('.', '')
+                                .replaceAll(',', '.'),
                           ) ??
                           0;
                       final months =
                           int.tryParse(monthsCtrl.text.trim()) ?? 0;
 
                       if (name.isEmpty || target <= 0 || months <= 0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.of(ctx).showSnackBar(
                           const SnackBar(
                               content: Text('Preencha todos os campos.')),
                         );
                         return;
                       }
 
-                      setState(() {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(content: Text('Usuário não autenticado.')),
+                        );
+                        return;
+                      }
+
+                      try {
                         if (isNew) {
-                          _goals.add(FinancialGoal(
-                            id: DateTime.now()
-                                .millisecondsSinceEpoch
-                                .toString(),
+                          final docRef = FirebaseFirestore.instance.collection('metas').doc();
+                          final newGoal = FinancialGoal(
+                            id: docRef.id,
+                            uid: user.uid,
                             name: name,
-                            emoji: emojiCtrl.text.trim().isEmpty
-                                ? '🎯'
-                                : emojiCtrl.text.trim(),
+                            emoji: emojiCtrl.text.trim().isEmpty ? '🎯' : emojiCtrl.text.trim(),
                             targetAmount: target,
-                            currentAmount: 0,
+                            currentAmount: 0.0,
                             monthsLeft: months,
-                          ));
+                            paused: false,
+                            createdAt: DateTime.now(),
+                          );
+                          await docRef.set(newGoal.toJson());
                         } else {
-                          goal.name = name;
-                          goal.emoji = emojiCtrl.text.trim().isEmpty
-                              ? '🎯'
-                              : emojiCtrl.text.trim();
-                          goal.targetAmount = target;
-                          goal.monthsLeft = months;
+                          await FirebaseFirestore.instance
+                              .collection('metas')
+                              .doc(goal.id)
+                              .update({
+                            'name': name,
+                            'emoji': emojiCtrl.text.trim().isEmpty ? '🎯' : emojiCtrl.text.trim(),
+                            'targetAmount': target,
+                            'monthsLeft': months,
+                          });
                         }
-                      });
-                      Navigator.pop(ctx);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(content: Text('Erro ao salvar meta: $e')),
+                          );
+                        }
+                      }
                     },
                     child: Text(isNew ? 'Criar Meta' : 'Salvar'),
                   ),
@@ -320,7 +353,7 @@ class _MetasViewState extends State<MetasView> {
   void _confirmDelete(FinancialGoal goal) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
         title: const Text('Excluir meta?'),
@@ -328,7 +361,7 @@ class _MetasViewState extends State<MetasView> {
             Text('A meta "${goal.name}" será removida permanentemente.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
@@ -338,9 +371,20 @@ class _MetasViewState extends State<MetasView> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
-            onPressed: () {
-              setState(() => _goals.remove(goal));
-              Navigator.pop(context);
+            onPressed: () async {
+              try {
+                await FirebaseFirestore.instance
+                    .collection('metas')
+                    .doc(goal.id)
+                    .delete();
+                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+              } catch (e) {
+                if (dialogCtx.mounted) {
+                  ScaffoldMessenger.of(dialogCtx).showSnackBar(
+                    SnackBar(content: Text('Erro ao excluir meta: $e')),
+                  );
+                }
+              }
             },
             child: const Text('Excluir'),
           ),
@@ -447,15 +491,15 @@ class _MetasViewState extends State<MetasView> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.15),
+                        color: Colors.amber.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
                         'Pausada',
                         style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.amber,
-                            fontWeight: FontWeight.w600),
+                             fontSize: 11,
+                             color: Colors.amber,
+                             fontWeight: FontWeight.w600),
                       ),
                     ),
                   PopupMenuButton<String>(
@@ -465,7 +509,19 @@ class _MetasViewState extends State<MetasView> {
                     onSelected: (v) {
                       if (v == 'edit') _showGoalForm(goal: goal);
                       if (v == 'pause') {
-                        setState(() => goal.paused = !goal.paused);
+                        _togglePause(goal);
+                      }
+                      if (v == 'notes') {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => ObservacoesBottomSheet(
+                            relatedId: goal.id,
+                            title: '${goal.emoji} ${goal.name}',
+                            subtitle: 'Meta - Objetivo R\$ ${goal.targetAmount.toStringAsFixed(2).replaceAll('.', ',')}',
+                          ),
+                        );
                       }
                       if (v == 'delete') _confirmDelete(goal);
                     },
@@ -494,6 +550,19 @@ class _MetasViewState extends State<MetasView> {
                           ),
                           const SizedBox(width: 10),
                           Text(goal.paused ? 'Retomar' : 'Pausar'),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'notes',
+                        child: Row(children: [
+                          Icon(
+                            Icons.description_outlined,
+                            color: isDark
+                                ? const Color(0xFF86EFAC)
+                                : null,
+                          ),
+                          const SizedBox(width: 10),
+                          const Text('Anotações'),
                         ]),
                       ),
                       PopupMenuItem(
@@ -595,6 +664,13 @@ class _MetasViewState extends State<MetasView> {
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    if (FirebaseAuth.instance.currentUser == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -622,16 +698,39 @@ class _MetasViewState extends State<MetasView> {
                 ),
               )
             : null,
-        child: _goals.isEmpty ? _buildEmpty() : _buildList(),
-      ),
-    );
-  }
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('metas')
+              .where('uid', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-  Widget _buildList() {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: _goals.length,
-      itemBuilder: (_, i) => _buildGoalCard(_goals[i]),
+            final docs = snapshot.data?.docs ?? [];
+            final goals = docs.map((doc) {
+              return FinancialGoal.fromJson(
+                doc.data() as Map<String, dynamic>,
+                docId: doc.id,
+              );
+            }).toList();
+
+            // Client-side sort by createdAt
+            goals.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+            if (goals.isEmpty) {
+              return _buildEmpty();
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              itemCount: goals.length,
+              itemBuilder: (_, i) => _buildGoalCard(goals[i]),
+            );
+          },
+        ),
+      ),
     );
   }
 

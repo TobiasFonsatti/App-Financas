@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../controller/login_controller.dart';
 import 'inicio.dart';
 import 'cadastro.dart';
@@ -20,6 +20,7 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
+
   final _controller = LoginController();
   final _emailController = TextEditingController();
   final _passController = TextEditingController();
@@ -27,8 +28,10 @@ class _LoginViewState extends State<LoginView> {
   String? _message;
   bool _isSuccess = false;
   bool _rememberMe = false;
+  bool _isLoading = false;
+  bool _obscurePassword = true;
 
-  void _login() {
+  Future<void> _login() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       setState(() {
         _message = null;
@@ -41,41 +44,53 @@ class _LoginViewState extends State<LoginView> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+      _message = null;
+    });
+
     final email = _emailController.text.trim();
     final password = _passController.text;
-    final success = _controller.login(email, password);
+    
+    final errorMessage = await _controller.login(email, password);
 
-    if (success) {
+    if (mounted) {
       setState(() {
-        _isSuccess = true;
-        _message = 'Login realizado com sucesso!';
+        _isLoading = false;
+        if (errorMessage == null) {
+          _isSuccess = true;
+          _message = 'Login realizado com sucesso!';
+        } else {
+          _isSuccess = false;
+          _message = errorMessage;
+        }
       });
-
-      showAppSnackBar(context, 'Login realizado com sucesso!');
-      Future.delayed(const Duration(milliseconds: 700), () {
-        if (!mounted) return;
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => HomeView(
-              isDarkMode: widget.isDarkMode,
-              onToggleTheme: widget.onToggleTheme,
-            ),
-          ),
-        );
-      });
-      return;
     }
 
-    setState(() {
-      _isSuccess = false;
-      _message =
-          'E-mail ou senha inválidos. Verifique suas credenciais e tente novamente.';
-    });
-    showAppSnackBar(
-      context,
-      'E-mail ou senha inválidos. Verifique suas credenciais e tente novamente.',
-      isError: true,
-    );
+    if (errorMessage == null) {
+      if (mounted) {
+        showAppSnackBar(context, 'Login realizado com sucesso!');
+        Future.delayed(const Duration(milliseconds: 700), () {
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => HomeView(
+                isDarkMode: widget.isDarkMode,
+                onToggleTheme: widget.onToggleTheme,
+              ),
+            ),
+          );
+        });
+      }
+    } else {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          errorMessage,
+          isError: true,
+        );
+      }
+    }
   }
 
   void _navigateToRegister() {
@@ -182,6 +197,7 @@ class _LoginViewState extends State<LoginView> {
                                     controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
                                     autofillHints: const [AutofillHints.email],
+                                    textInputAction: TextInputAction.next,
                                     style: TextStyle(
                                       color: widget.isDarkMode
                                           ? Colors.green.shade100
@@ -223,7 +239,9 @@ class _LoginViewState extends State<LoginView> {
                                   const SizedBox(height: 16),
                                   TextFormField(
                                     controller: _passController,
-                                    obscureText: true,
+                                    obscureText: _obscurePassword,
+                                    textInputAction: TextInputAction.done,
+                                    onFieldSubmitted: (_) => _login(),
                                     style: TextStyle(
                                       color: widget.isDarkMode
                                           ? Colors.green.shade100
@@ -241,6 +259,21 @@ class _LoginViewState extends State<LoginView> {
                                         color: widget.isDarkMode
                                             ? Colors.green.shade200
                                             : Colors.green.shade700,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                          color: widget.isDarkMode
+                                              ? Colors.green.shade200
+                                              : Colors.green.shade700,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _obscurePassword = !_obscurePassword;
+                                          });
+                                        },
                                       ),
                                       filled: true,
                                       fillColor: widget.isDarkMode
@@ -376,21 +409,30 @@ class _LoginViewState extends State<LoginView> {
                         ],
                       ),
                       child: TextButton(
-                        onPressed: _login,
+                        onPressed: _isLoading ? null : _login,
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
                         ),
-                        child: const Text(
-                          'Entrar',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : const Text(
+                                'Entrar',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -403,7 +445,7 @@ class _LoginViewState extends State<LoginView> {
                         border: Border.all(color: Colors.green, width: 1.8),
                       ),
                       child: TextButton(
-                        onPressed: _navigateToRegister,
+                        onPressed: _isLoading ? null : _navigateToRegister,
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.green,
                           shape: RoundedRectangleBorder(
